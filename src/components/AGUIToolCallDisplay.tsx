@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { AGUIToolCall } from '../types';
 
 /**
@@ -42,7 +41,7 @@ export function AGUIToolCallDisplay({ toolCall }: AGUIToolCallDisplayProps) {
           </pre>
         </div>
       )}
-      {toolCall.result && (
+      {toolCall.result !== undefined && toolCall.result !== null && (
         <div>
           <strong>Result:</strong>
           <pre style={{ margin: '4px 0', padding: '4px', background: '#eee', borderRadius: '4px' }}>

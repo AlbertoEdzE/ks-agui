@@ -3,7 +3,6 @@
  */
 import { expect, test, describe, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
-import * as React from 'react';
 import { AGUIApprovalGate } from '../../src/components/AGUIApprovalGate';
 import { AGUIToolCall } from '../../src/types';
 
