@@ -102,3 +102,25 @@ export interface AGUIProviderProps {
    */
   children: ReactNode;
 }
+
+/**
+ * Props for the AGUIChat component.
+ */
+export interface AGUIChatProps {
+  /**
+   * Input placeholder text. Default: "Type a message..."
+   */
+  placeholder?: string;
+  /**
+   * CSS class applied to root element.
+   */
+  className?: string;
+  /**
+   * Custom message renderer.
+   */
+  renderMessage?: (message: AGUIMessage) => ReactNode;
+  /**
+   * Custom tool call renderer.
+   */
+  renderToolCall?: (toolCall: AGUIToolCall) => ReactNode;
+}
