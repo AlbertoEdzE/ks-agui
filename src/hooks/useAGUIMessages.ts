@@ -39,8 +39,26 @@ export function useAGUIMessages() {
           m.id === event.messageId ? { ...m, content: textMessageBuffer, status: 'complete' } : m
         ));
       },
-      onMessagesSnapshotEvent: () => {
-        // Not specifically asked in AGUI-12, but we can map them if needed
+      onMessagesSnapshotEvent: ({ event }) => {
+        setMessages(event.messages.map((m: any) => ({
+          id: m.id,
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content?.map((c: any) => c.text).join('') || '',
+          status: 'complete',
+          createdAt: m.createdAt ? new Date(m.createdAt).getTime() : Date.now()
+        })));
+      },
+      onRunErrorEvent: () => {
+        setIsStreaming(false);
+      },
+      onCustomEvent: () => {
+        // AGUI-45: Silently ignored
+      },
+      onRawEvent: () => {
+        // AGUI-46: Silently ignored
+      },
+      onStepStartedEvent: () => {
+        // AGUI-47: Silently ignored
       }
     });
 

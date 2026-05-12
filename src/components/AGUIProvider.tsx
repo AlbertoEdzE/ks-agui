@@ -20,6 +20,15 @@ export function AGUIProvider({ endpoint, headers, threadId, onError, children }:
       if (headers) config.headers = headers;
       if (threadId) config.threadId = threadId;
       const currentAgent = new HttpAgent(config);
+      
+      currentAgent.subscribe({
+        onRunErrorEvent: ({ event }) => {
+          if (onError) {
+            onError({ code: 'RUN_ERROR', message: (event as any).error, originalEvent: event as any });
+          }
+        }
+      });
+
       agentRef.current = currentAgent;
       setAgent(currentAgent);
 
