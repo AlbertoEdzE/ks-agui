@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 /**
  * Represents an error encountered in the AG-UI system.
  * Used in AGUIProviderProps and error states.
@@ -73,4 +75,30 @@ export interface AGUIToolCall {
    * Optional result returned by the tool execution.
    */
   result?: unknown;
+}
+
+/**
+ * Props for the AGUIProvider component.
+ */
+export interface AGUIProviderProps {
+  /**
+   * Required. Full URL of AG-UI SSE endpoint.
+   */
+  endpoint: string;
+  /**
+   * Optional. Static HTTP headers.
+   */
+  headers?: Record<string, string>;
+  /**
+   * Optional. Conversation thread identifier.
+   */
+  threadId?: string;
+  /**
+   * Optional. Error callback.
+   */
+  onError?: (error: AGUIError) => void;
+  /**
+   * The React children to render within the provider.
+   */
+  children: ReactNode;
 }
