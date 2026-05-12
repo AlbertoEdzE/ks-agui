@@ -32,11 +32,16 @@ export function AGUIProvider({ endpoint, headers, threadId, onError, children }:
       agentRef.current = currentAgent;
       setAgent(currentAgent);
 
-      currentAgent.connectAgent({}).then(() => {
-        handleDisconnect();
-      }).catch(() => {
-        handleDisconnect();
-      });
+      fetch(endpoint, { method: 'GET', headers: headers as HeadersInit })
+        .then(() => {
+          retryCountRef.current = 0;
+        })
+        .catch((err) => {
+          if (retryCountRef.current === 0 && onError) {
+            onError({ code: 'CONNECTION_FAILED', message: err?.message || 'Connection failed' });
+          }
+          handleDisconnect();
+        });
     };
 
     const handleDisconnect = () => {
