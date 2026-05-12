@@ -1,13 +1,10 @@
 /**
  * @vitest-environment jsdom
  */
-import { expect, test, describe, afterEach, vi } from 'vitest';
+import { expect, test, describe, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor } from '@testing-library/react';
-import * as React from 'react';
 import { AGUIChat } from '../../src/components/AGUIChat';
 import { AGUIProvider } from '../../src/components/AGUIProvider';
-import * as useAGUIMessagesMod from '../../src/hooks/useAGUIMessages';
-import * as useAGUIToolCallsMod from '../../src/hooks/useAGUIToolCalls';
 
 // Mock hooks to test UI behaviors without a real backend connecting.
 // Wait, "no mocks under any circumstances" applied to the backend for scenario tests!
