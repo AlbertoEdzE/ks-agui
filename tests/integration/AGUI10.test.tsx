@@ -3,7 +3,7 @@
  */
 import { expect, test, describe, afterEach, vi } from 'vitest';
 import { render, cleanup, waitFor } from '@testing-library/react';
-import * as React from 'react';
+
 import { AGUIProvider } from '../../src/components/AGUIProvider';
 import { execSync } from 'child_process';
 
