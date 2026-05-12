@@ -1,0 +1,30 @@
+{
+  "name": "ks-agui",
+  "version": "1.0.0",
+  "description": "General AG-UI",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlbertoEdzE/ks-agui.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AlbertoEdzE/ks-agui/issues"
+  },
+  "homepage": "https://github.com/AlbertoEdzE/ks-agui#readme",
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "react": "^19.2.6",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
+  }
+}
