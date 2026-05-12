@@ -48,3 +48,29 @@ export interface AGUIMessage {
    */
   createdAt: number;
 }
+
+/**
+ * Represents a tool call in the AG-UI conversation.
+ */
+export interface AGUIToolCall {
+  /**
+   * Unique identifier for the tool call.
+   */
+  id: string;
+  /**
+   * Name of the tool being called.
+   */
+  name: string;
+  /**
+   * Arguments passed to the tool.
+   */
+  args: Record<string, unknown>;
+  /**
+   * The current status of the tool call.
+   */
+  status: 'pending' | 'approved' | 'rejected' | 'executing' | 'complete';
+  /**
+   * Optional result returned by the tool execution.
+   */
+  result?: unknown;
+}
