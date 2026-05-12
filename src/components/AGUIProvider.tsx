@@ -1,8 +1,7 @@
 import * as React from 'react';
 import type { AGUIProviderProps } from '../types/index';
 import { HttpAgent } from '@ag-ui/client';
-
-export const AGUIContext = React.createContext<HttpAgent | null>(null);
+import { AGUIContext } from '../hooks/useAGUIConnection';
 
 export function AGUIProvider({ endpoint, headers, threadId, onError, children }: AGUIProviderProps) {
   const [agent, setAgent] = React.useState<HttpAgent | null>(null);

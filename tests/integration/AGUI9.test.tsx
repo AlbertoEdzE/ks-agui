@@ -4,7 +4,8 @@
 import { expect, test, describe, afterEach, beforeAll, afterAll } from 'vitest';
 import { render, cleanup, waitFor } from '@testing-library/react';
 import * as React from 'react';
-import { AGUIProvider, AGUIContext } from '../../src/components/AGUIProvider';
+import { AGUIProvider } from '../../src/components/AGUIProvider';
+import { AGUIContext } from '../../src/hooks/useAGUIConnection';
 import { execSync } from 'child_process';
 
 describe('AGUI-9 Integration', () => {
