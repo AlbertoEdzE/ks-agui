@@ -22,3 +22,29 @@ export interface AGUIError {
    */
   originalEvent?: Event;
 }
+
+/**
+ * Represents a single message in the AG-UI conversation.
+ */
+export interface AGUIMessage {
+  /**
+   * Unique identifier for the message.
+   */
+  id: string;
+  /**
+   * The role of the entity that sent the message.
+   */
+  role: 'assistant' | 'user';
+  /**
+   * The text content of the message.
+   */
+  content: string;
+  /**
+   * The current streaming status of the message.
+   */
+  status: 'streaming' | 'complete';
+  /**
+   * Unix timestamp in milliseconds indicating when the message was created.
+   */
+  createdAt: number;
+}
