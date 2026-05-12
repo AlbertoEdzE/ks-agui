@@ -51,7 +51,7 @@ describe('AGUI-12 to 15 Integration', () => {
     // Wait until agent connects
     await waitFor(() => expect(hookResult).not.toBeNull());
 
-    const initialRenderCount = renderCount;
+    
 
     // AGUI-13: sendMessage emits RUN_STARTED and appends locally
     act(() => {

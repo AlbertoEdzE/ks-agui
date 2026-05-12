@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { expect, test, describe, afterEach, beforeAll, afterAll } from 'vitest';
+import { expect, test, describe, afterEach, } from 'vitest';
 import { render, cleanup, waitFor, act } from '@testing-library/react';
 import * as React from 'react';
 import { AGUIProvider } from '../../src/components/AGUIProvider';

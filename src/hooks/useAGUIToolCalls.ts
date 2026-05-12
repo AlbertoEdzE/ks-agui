@@ -14,8 +14,8 @@ export function useAGUIToolCalls() {
         setToolCalls(prev => [
           ...prev,
           {
-            id: event.callId,
-            name: event.name,
+            id: event.callId as string,
+            name: event.name as string,
             args: {},
             status: 'pending'
           }
@@ -26,12 +26,12 @@ export function useAGUIToolCalls() {
           t.id === event.callId ? { ...t, args: partialToolCallArgs } : t
         ));
       },
-      onToolCallEndEvent: ({ event }) => {
+      onToolCallEndEvent: () => {
         // Just finish args parsing
       },
       onToolCallResultEvent: ({ event }) => {
         setToolCalls(prev => prev.map(t => 
-          t.id === event.callId ? { ...t, status: event.result.approved ? 'approved' : 'rejected', result: event.result } : t
+          t.id === event.callId ? { ...t, status: (event.result as any)?.approved ? 'approved' : 'rejected', result: event.result as any } : t
         ));
       }
     });

@@ -3,7 +3,6 @@
  */
 import { expect, test, describe, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import * as React from 'react';
 import { AGUIMessage } from '../../src/components/AGUIMessage';
 import { AGUIMessage as AGUIMessageType } from '../../src/types';
 

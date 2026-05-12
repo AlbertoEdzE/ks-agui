@@ -39,7 +39,7 @@ export function useAGUIMessages() {
           m.id === event.messageId ? { ...m, content: textMessageBuffer, status: 'complete' } : m
         ));
       },
-      onMessagesSnapshotEvent: ({ event }) => {
+      onMessagesSnapshotEvent: () => {
         // Not specifically asked in AGUI-12, but we can map them if needed
       }
     });

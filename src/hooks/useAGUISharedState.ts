@@ -11,13 +11,13 @@ export function useAGUISharedState() {
 
     const sub = agent.subscribe({
       onStateSnapshotEvent: ({ event }) => {
-        setStateValue(event.state);
+        setStateValue(event.state as Record<string, any>);
       },
       onStateDeltaEvent: ({ event }) => {
         setStateValue(prev => {
           try {
             // Apply RFC 6902 patch
-            return jsonpatch.applyPatch(JSON.parse(JSON.stringify(prev)), event.patch).newDocument;
+            return jsonpatch.applyPatch(JSON.parse(JSON.stringify(prev)), event.patch as any).newDocument;
           } catch(e) {
             console.error('Failed to apply state patch:', e);
             return prev;
