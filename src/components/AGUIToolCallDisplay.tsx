@@ -28,7 +28,7 @@ export function AGUIToolCallDisplay({ toolCall }: AGUIToolCallDisplayProps) {
       }}
     >
       <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-        ⚙️ Tool Call: {toolCall.name}
+        Tool Call: {toolCall.name}
       </div>
       <div style={{ marginBottom: '4px' }}>
         <strong>Status:</strong> {toolCall.status}

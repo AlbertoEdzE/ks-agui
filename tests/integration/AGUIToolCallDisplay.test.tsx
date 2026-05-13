@@ -21,7 +21,7 @@ describe('AGUI-24 Component Integration', () => {
 
     const { getByText, rerender } = render(<AGUIToolCallDisplay toolCall={toolCall} />);
     
-    expect(getByText('⚙️ Tool Call: getWeather')).toBeDefined();
+    expect(getByText('Tool Call: getWeather')).toBeDefined();
     expect(getByText(/pending/)).toBeDefined();
     expect(getByText(/"location":\s*"Seattle"/)).toBeDefined();
 
