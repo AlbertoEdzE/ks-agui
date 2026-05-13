@@ -64,7 +64,14 @@ export function useAGUIToolCalls() {
       t.id === id ? { ...t, status: 'rejected' } : t
     ));
     
-    agent.abortRun();
+    agent.addMessage({
+      id: crypto.randomUUID(),
+      role: 'tool',
+      content: 'Rejected by user',
+      toolCallId: id,
+    } as any);
+    
+    agent.runAgent();
   }, [agent]);
 
   return { toolCalls, approveToolCall, rejectToolCall };

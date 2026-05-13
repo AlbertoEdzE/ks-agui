@@ -40,7 +40,8 @@ export function AGUIProvider({ endpoint, headers, threadId, onError, children }:
       currentAgent.subscribe({
         onRunErrorEvent: ({ event }) => {
           if (onError) {
-            onError({ code: 'RUN_ERROR', message: (event as any).message || 'Run error', originalEvent: event as any });
+            const code = (event as any).code === 'TOOL_REJECTED' ? 'TOOL_REJECTED' : 'RUN_ERROR';
+            onError({ code, message: (event as any).message || 'Run error', originalEvent: event as any });
           }
         }
       });
