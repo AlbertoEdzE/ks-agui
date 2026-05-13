@@ -1,5 +1,8 @@
+import json
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from copilotkit import CopilotKitRemoteEndpoint, LangGraphAGUIAgent
 from copilotkit.integrations.fastapi import add_fastapi_endpoint
 from agent import graph
@@ -23,7 +26,38 @@ agent = LangGraphAGUIAgent(
 sdk = CopilotKitRemoteEndpoint(agents=[agent])
 add_fastapi_endpoint(app, sdk, "/copilotkit")
 
-from fastapi.responses import StreamingResponse
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+@app.api_route("/emit_tool_call", methods=["GET", "POST"])
+async def emit_tool_call():
+    """Deterministic endpoint: emits a full TOOL_CALL_START → TOOL_CALL_ARGS →
+    TOOL_CALL_END → TOOL_CALL_RESULT sequence for acceptance criteria testing."""
+    async def generate():
+        yield _sse({"type": "RUN_STARTED", "threadId": "tc", "runId": "r1"})
+        yield _sse({"type": "TOOL_CALL_START", "threadId": "tc", "runId": "r1",
+                    "toolCallId": "call_1", "toolCallName": "search_web",
+                    "parentMessageId": "msg_1"})
+        yield _sse({"type": "TOOL_CALL_ARGS", "threadId": "tc", "runId": "r1",
+                    "toolCallId": "call_1",
+                    "delta": json.dumps({"query": "weather Seattle"})})
+        yield _sse({"type": "TOOL_CALL_END", "threadId": "tc", "runId": "r1",
+                    "toolCallId": "call_1"})
+        await asyncio.sleep(0.1)
+        yield _sse({"type": "TOOL_CALL_RESULT", "threadId": "tc", "runId": "r1",
+                    "toolCallId": "call_1", "messageId": "msg_result_1",
+                    "content": "Weather in Seattle: Sunny, 72F"})
+        yield _sse({"type": "TEXT_MESSAGE_START", "threadId": "tc", "runId": "r1",
+                    "messageId": "msg_2", "role": "assistant"})
+        yield _sse({"type": "TEXT_MESSAGE_CONTENT", "threadId": "tc", "runId": "r1",
+                    "messageId": "msg_2", "delta": "Search result: Sunny 72F."})
+        yield _sse({"type": "TEXT_MESSAGE_END", "threadId": "tc", "runId": "r1",
+                    "messageId": "msg_2"})
+        yield _sse({"type": "RUN_FINISHED", "threadId": "tc", "runId": "r1"})
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
 
 @app.api_route("/reject_tool", methods=["GET", "POST"])
 async def reject_tool():
