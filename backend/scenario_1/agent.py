@@ -2,7 +2,7 @@ from typing import TypedDict, Annotated
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AnyMessage, AIMessage, HumanMessage
 import operator
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
