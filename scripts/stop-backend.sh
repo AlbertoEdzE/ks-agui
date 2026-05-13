@@ -20,12 +20,12 @@ if [ -f "$PID_FILE" ]; then
   else
     echo "Backend $SCENARIO was not running."
   fi
-  rm "$PID_FILE"
+  rm -f "$PID_FILE"
 else
   PID=$(lsof -t -i :$PORT || true)
   if [ -n "$PID" ]; then
-    kill "$PID"
-    echo "Stopped backend $SCENARIO on port $PORT (PID $PID)"
+    echo "$PID" | xargs kill 2>/dev/null || true
+    echo "Stopped backend $SCENARIO on port $PORT"
   else
     echo "Backend $SCENARIO does not appear to be running."
   fi

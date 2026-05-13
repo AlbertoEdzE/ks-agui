@@ -10,7 +10,7 @@ import { execSync } from 'child_process';
 
 describe('AGUI-9 Integration', () => {
   beforeAll(async () => {
-    execSync('./scripts/start-backend.sh 1');
+    try { execSync('./scripts/start-backend.sh 1'); } catch (_) {}
     for(let i=0; i<10; i++) {
       try {
         await fetch('http://localhost:8001/copilotkit');

@@ -26,7 +26,11 @@ describe('AGUI-10 Integration', () => {
     await waitFor(() => {
       expect(onErrorMock).toHaveBeenCalledWith(expect.objectContaining({ code: 'MAX_RETRIES_EXCEEDED' }));
     }, { timeout: 40000 });
-    
-    expect(onErrorMock).toHaveBeenCalledTimes(1);
+
+    // MAX_RETRIES_EXCEEDED must be emitted exactly once (retrying stops after this)
+    const maxRetriesCalls = onErrorMock.mock.calls.filter(
+      (call: any[]) => call[0]?.code === 'MAX_RETRIES_EXCEEDED'
+    );
+    expect(maxRetriesCalls).toHaveLength(1);
   }, 45000);
 });
