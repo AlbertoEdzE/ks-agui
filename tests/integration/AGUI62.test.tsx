@@ -3,9 +3,7 @@
  */
 import { expect, test, describe, afterEach, vi } from 'vitest';
 import { render, cleanup, waitFor } from '@testing-library/react';
-import * as React from 'react';
 import { AGUIProvider } from '../../src/components/AGUIProvider';
-import { AGUIError } from '../../src/types';
 
 describe('AGUI-62: CONNECTION_FAILED', () => {
   afterEach(() => {

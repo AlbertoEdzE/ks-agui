@@ -26,3 +26,13 @@ agent = LangGraphAGUIAgent(
 
 sdk = CopilotKitRemoteEndpoint(agents=[agent])
 add_fastapi_endpoint(app, sdk, "/copilotkit")
+
+from fastapi.responses import StreamingResponse
+
+@app.post("/malformed_sse")
+async def malformed_sse():
+    async def generate():
+        yield "data: { invalid_json:\n\n"
+        yield "data: {\"type\": \"RUN_FINISHED\"}\n\n"
+    return StreamingResponse(generate(), media_type="text/event-stream")
+

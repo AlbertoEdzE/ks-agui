@@ -81,7 +81,9 @@ export function useAGUIMessages() {
     // Wait, @ag-ui/core Message has id, role, content array.
     agent.addMessage({ id: userMessage.id, role: 'user', content: [{ type: 'text', text: content }] } as any);
     setIsStreaming(true);
-    agent.runAgent().finally(() => setIsStreaming(false));
+    agent.runAgent()
+      .catch(() => {}) // Error handling is done via subscribers/provider
+      .finally(() => setIsStreaming(false));
   }, [agent]);
 
   const clearMessages = useCallback(() => {

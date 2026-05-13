@@ -3,7 +3,6 @@
  */
 import { expect, test, describe, afterEach, vi } from 'vitest';
 import { render, cleanup, waitFor } from '@testing-library/react';
-import * as React from 'react';
 import { AGUIProvider } from '../../src/components/AGUIProvider';
 
 describe('AGUI-63: MAX_RETRIES_EXCEEDED', () => {

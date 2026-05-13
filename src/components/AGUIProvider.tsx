@@ -20,11 +20,27 @@ export function AGUIProvider({ endpoint, headers, threadId, onError, children }:
       if (headers) config.headers = headers;
       if (threadId) config.threadId = threadId;
       const currentAgent = new HttpAgent(config);
-      
+
+      // Wrap subscribe to catch parse errors and other SDK failures
+      const originalSubscribe = currentAgent.subscribe.bind(currentAgent);
+      currentAgent.subscribe = (subscriber: any) => {
+        const wrappedSubscriber = {
+          ...subscriber,
+          onRunFailed: async (params: any) => {
+            const msg = params.error?.message?.toLowerCase() || '';
+            if (msg.includes('parse') || msg.includes('json') || msg.includes('syntax')) {
+              console.warn('PARSE_ERROR', params.error);
+            }
+            return subscriber.onRunFailed?.(params);
+          }
+        };
+        return originalSubscribe(wrappedSubscriber);
+      };
+
       currentAgent.subscribe({
         onRunErrorEvent: ({ event }) => {
           if (onError) {
-            onError({ code: 'RUN_ERROR', message: (event as any).error, originalEvent: event as any });
+            onError({ code: 'RUN_ERROR', message: (event as any).message || 'Run error', originalEvent: event as any });
           }
         }
       });

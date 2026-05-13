@@ -19,7 +19,7 @@ export function useAGUISharedState() {
             // Apply RFC 6902 patch
             return jsonpatch.applyPatch(JSON.parse(JSON.stringify(prev)), event.patch as any).newDocument;
           } catch(e) {
-            console.error('Failed to apply state patch:', e);
+            console.warn('INVALID_STATE_PATCH', e);
             return prev;
           }
         });
