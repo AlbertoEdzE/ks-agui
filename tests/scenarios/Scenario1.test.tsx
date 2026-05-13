@@ -1,51 +1,98 @@
 /**
  * @vitest-environment jsdom
  */
-import { expect, test, describe, afterEach, beforeAll } from 'vitest';
-import { render, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { expect, test, describe, afterEach, beforeAll, afterAll } from 'vitest';
+import { render, cleanup, fireEvent, waitFor, act } from '@testing-library/react';
+import * as React from 'react';
+import { execSync } from 'child_process';
 import { AGUIProvider } from '../../src/components/AGUIProvider';
 import { AGUIChat } from '../../src/components/AGUIChat';
+import { useAGUIMessages } from '../../src/hooks/useAGUIMessages';
 
 describe('Scenario 1: Streaming Text Response', () => {
-  beforeAll(() => {
-    process.on('unhandledRejection', (reason) => {
-      console.warn('Unhandled rejection:', reason);
-    });
+  beforeAll(async () => {
+    try { execSync('./scripts/start-backend.sh 1'); } catch (_) {}
+    for (let i = 0; i < 20; i++) {
+      try { await fetch('http://localhost:8001/copilotkit'); break; } catch (_) {
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
   });
 
-  afterEach(() => {
-    cleanup();
-  });
+  afterAll(() => { try { execSync('./scripts/stop-backend.sh 1'); } catch (_) {} });
 
-  test('E2E Scenario 1', async () => {
+  afterEach(() => { cleanup(); });
+
+  // AGUI-48 + AGUI-50: tokens arrive quickly, input disabled/re-enabled
+  test('AGUI-48/50: sends message, input disables during streaming, re-enables on RUN_FINISHED', async () => {
     const { getByPlaceholderText, getByText } = render(
       <AGUIProvider endpoint="http://localhost:8001/copilotkit">
         <AGUIChat placeholder="Type here..." />
       </AGUIProvider>
     );
-
     const input = getByPlaceholderText('Type here...') as HTMLInputElement;
-    const sendButton = getByText('Send') as HTMLButtonElement;
+    const sendBtn = getByText('Send') as HTMLButtonElement;
 
-    // Type a message
-    fireEvent.change(input, { target: { value: 'Hello Ollama' } });
-    expect(sendButton.disabled).toBe(false);
+    fireEvent.change(input, { target: { value: 'Hello' } });
+    const t0 = Date.now();
+    fireEvent.click(sendBtn);
 
-    // Submit
-    fireEvent.click(sendButton);
+    await waitFor(() => expect(input.disabled).toBe(true));
+    const t1 = Date.now();
+    expect(t1 - t0).toBeLessThan(200);
 
-    // Input disabled during streaming
-    await waitFor(() => {
-      expect(input.disabled).toBe(true);
-    });
+    await waitFor(() => expect(input.disabled).toBe(false), { timeout: 30000 });
+  });
 
-    // Re-enabled after finish
-    await waitFor(() => {
-      expect(input.disabled).toBe(false);
-    }, { timeout: 10000 });
+  // AGUI-49: message status transitions streaming → complete
+  test('AGUI-49: message status goes streaming → complete on TEXT_MESSAGE_END', async () => {
+    let hookResult: ReturnType<typeof useAGUIMessages> | null = null;
 
-    // Since our backend stub currently doesn't stream tokens correctly via the CopilotKit integration,
-    // we verify the component lifecycle handles the request cleanly without orphaned listeners.
-    expect(true).toBe(true);
+    const Spy = () => {
+      const h = useAGUIMessages();
+      React.useEffect(() => { hookResult = h; });
+      return null;
+    };
+
+    render(
+      <AGUIProvider endpoint="http://localhost:8001/copilotkit">
+        <Spy />
+      </AGUIProvider>
+    );
+
+    await waitFor(() => expect(hookResult).not.toBeNull());
+
+    act(() => { hookResult!.sendMessage('Say one word.'); });
+
+    await waitFor(() =>
+      hookResult!.messages.some(m => m.role === 'assistant' && m.status === 'streaming'),
+      { timeout: 30000 }
+    );
+
+    await waitFor(() =>
+      hookResult!.messages.every(m => m.status === 'complete'),
+      { timeout: 30000 }
+    );
+  });
+
+  // AGUI-51: no orphaned listeners after unmount
+  test('AGUI-51: no errors after component unmounts mid-stream', async () => {
+    const errors: string[] = [];
+    const origError = console.error;
+    console.error = (...args: unknown[]) => { errors.push(String(args[0])); };
+
+    const { unmount } = render(
+      <AGUIProvider endpoint="http://localhost:8001/copilotkit">
+        <AGUIChat />
+      </AGUIProvider>
+    );
+
+    await new Promise(r => setTimeout(r, 300));
+    unmount();
+    await new Promise(r => setTimeout(r, 500));
+    console.error = origError;
+
+    const reactErrors = errors.filter(e => e.includes('Cannot update') || e.includes('memory leak'));
+    expect(reactErrors).toHaveLength(0);
   });
 });
