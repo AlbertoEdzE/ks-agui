@@ -14,24 +14,26 @@ export function useAGUIToolCalls() {
         setToolCalls(prev => [
           ...prev,
           {
-            id: event.callId as string,
-            name: event.name as string,
+            id: event.toolCallId,
+            name: event.toolCallName,
             args: {},
             status: 'pending'
           }
         ]);
       },
       onToolCallArgsEvent: ({ event, partialToolCallArgs }) => {
-        setToolCalls(prev => prev.map(t => 
-          t.id === event.callId ? { ...t, args: partialToolCallArgs } : t
+        setToolCalls(prev => prev.map(t =>
+          t.id === event.toolCallId ? { ...t, args: partialToolCallArgs } : t
         ));
       },
-      onToolCallEndEvent: () => {
-        // Just finish args parsing
+      onToolCallEndEvent: ({ event }) => {
+        setToolCalls(prev => prev.map(t =>
+          t.id === event.toolCallId ? { ...t, status: 'executing' } : t
+        ));
       },
       onToolCallResultEvent: ({ event }) => {
-        setToolCalls(prev => prev.map(t => 
-          t.id === event.callId ? { ...t, status: (event.result as any)?.approved ? 'approved' : 'rejected', result: event.result as any } : t
+        setToolCalls(prev => prev.map(t =>
+          t.id === event.toolCallId ? { ...t, status: 'complete', result: event.content } : t
         ));
       }
     });
@@ -39,38 +41,37 @@ export function useAGUIToolCalls() {
     return () => sub.unsubscribe();
   }, [agent]);
 
-  const approveToolCall = useCallback((id: string, result?: any) => {
+  const approveToolCall = useCallback((id: string, result?: unknown) => {
     if (!agent) return;
-    
-    setToolCalls(prev => prev.map(t => 
+
+    setToolCalls(prev => prev.map(t =>
       t.id === id ? { ...t, status: 'approved', result } : t
     ));
 
     agent.addMessage({
       id: crypto.randomUUID(),
-      role: 'user', // Action results in copilotkit are typically pushed this way
-      type: 'ActionExecutionResult',
-      actionExecutionId: id,
-      result: JSON.stringify(result || { approved: true })
-    } as any);
-    
+      role: 'tool',
+      toolCallId: id,
+      content: JSON.stringify(result ?? { approved: true })
+    } as Parameters<typeof agent.addMessage>[0]);
+
     agent.runAgent();
   }, [agent]);
 
   const rejectToolCall = useCallback((id: string) => {
     if (!agent) return;
-    
-    setToolCalls(prev => prev.map(t => 
+
+    setToolCalls(prev => prev.map(t =>
       t.id === id ? { ...t, status: 'rejected' } : t
     ));
-    
+
     agent.addMessage({
       id: crypto.randomUUID(),
       role: 'tool',
-      content: 'Rejected by user',
       toolCallId: id,
-    } as any);
-    
+      content: JSON.stringify({ approved: false })
+    } as Parameters<typeof agent.addMessage>[0]);
+
     agent.runAgent();
   }, [agent]);
 
