@@ -26,9 +26,9 @@ export function useAGUIToolCalls() {
           t.id === event.toolCallId ? { ...t, args: partialToolCallArgs } : t
         ));
       },
-      onToolCallEndEvent: ({ event }) => {
+      onToolCallEndEvent: ({ event, toolCallArgs }) => {
         setToolCalls(prev => prev.map(t =>
-          t.id === event.toolCallId ? { ...t, status: 'executing' } : t
+          t.id === event.toolCallId ? { ...t, args: toolCallArgs ?? t.args, status: 'executing' } : t
         ));
       },
       onToolCallResultEvent: ({ event }) => {

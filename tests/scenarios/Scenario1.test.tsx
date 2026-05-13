@@ -54,8 +54,9 @@ describe('Scenario 1: Streaming Text Response', () => {
       return null;
     };
 
+    // Use deterministic /stream_text endpoint — same backend, no Ollama required
     render(
-      <AGUIProvider endpoint="http://localhost:8001/copilotkit">
+      <AGUIProvider endpoint="http://localhost:8001/stream_text">
         <Spy />
       </AGUIProvider>
     );
@@ -64,14 +65,13 @@ describe('Scenario 1: Streaming Text Response', () => {
 
     act(() => { hookResult!.sendMessage('Say one word.'); });
 
+    // With React 18 batching, streaming→complete may happen within one render;
+    // verify the pipeline completed: an assistant message with content exists
     await waitFor(() =>
-      hookResult!.messages.some(m => m.role === 'assistant' && m.status === 'streaming'),
-      { timeout: 30000 }
-    );
-
-    await waitFor(() =>
-      hookResult!.messages.every(m => m.status === 'complete'),
-      { timeout: 30000 }
+      expect(
+        hookResult!.messages.some(m => m.role === 'assistant' && m.status === 'complete' && m.content.length > 0)
+      ).toBe(true),
+      { timeout: 10000 }
     );
   });
 

@@ -42,28 +42,20 @@ describe('Scenario 3: Live Shared State Synchronization', () => {
     );
 
     await waitFor(() => expect(stateHook).not.toBeNull());
+
+    // React 18 batching: intermediate 'idle'/'loading' states may not render;
+    // verify all patches applied by checking final state and elapsed time
+    const t0 = Date.now();
     act(() => { msgHook!.sendMessage('sync'); });
 
-    // Wait for STATE_SNAPSHOT (initial state arrives first)
     await waitFor(() =>
-      (stateHook!.state as Record<string, unknown>).status === 'idle',
-      { timeout: 5000 }
-    );
-
-    // Measure time to receive first STATE_DELTA
-    const t0 = Date.now();
-    await waitFor(() =>
-      (stateHook!.state as Record<string, unknown>).status !== 'idle',
-      { timeout: 5000 }
+      expect((stateHook!.state as Record<string, unknown>).status).toBe('done'),
+      { timeout: 10000 }
     );
     const elapsed = Date.now() - t0;
     expect(elapsed).toBeLessThan(5000);
 
-    // Wait for final state
-    await waitFor(() =>
-      (stateHook!.state as Record<string, unknown>).status === 'done',
-      { timeout: 10000 }
-    );
+    // items.length === 2 proves both STATE_DELTA patches were applied
     const finalState = stateHook!.state as Record<string, unknown>;
     expect((finalState.items as string[]).length).toBe(2);
   });
@@ -71,11 +63,9 @@ describe('Scenario 3: Live Shared State Synchronization', () => {
   // AGUI-58: STATE_SNAPSHOT replaces all prior state
   test('AGUI-58: STATE_SNAPSHOT correctly replaces all prior state', async () => {
     let stateHook: ReturnType<typeof useAGUISharedState> | null = null;
-    let msgHook: ReturnType<typeof useAGUIMessages> | null = null;
 
     const Spy = () => {
       stateHook = useAGUISharedState();
-      msgHook = useAGUIMessages();
       return null;
     };
 
@@ -87,18 +77,16 @@ describe('Scenario 3: Live Shared State Synchronization', () => {
 
     await waitFor(() => expect(stateHook).not.toBeNull());
 
-    // Set some pre-existing state
+    // Set some pre-existing state — setState also triggers runAgent (backend → STATE_SNAPSHOT)
     act(() => { stateHook!.setState({ stale: true, extra: 'old' }); });
     expect((stateHook!.state as Record<string, unknown>).stale).toBe(true);
 
-    act(() => { msgHook!.sendMessage('sync'); });
-
-    // STATE_SNAPSHOT from backend must fully replace the stale state
+    // STATE_SNAPSHOT from backend must fully replace the stale state.
+    // React 18 batching: 'idle' intermediate state may not render; wait for 'stale' to disappear.
     await waitFor(() =>
-      (stateHook!.state as Record<string, unknown>).status === 'idle',
-      { timeout: 5000 }
+      expect((stateHook!.state as Record<string, unknown>).stale).toBeUndefined(),
+      { timeout: 10000 }
     );
-    expect((stateHook!.state as Record<string, unknown>).stale).toBeUndefined();
     expect((stateHook!.state as Record<string, unknown>).extra).toBeUndefined();
   });
 
@@ -124,11 +112,11 @@ describe('Scenario 3: Live Shared State Synchronization', () => {
 
     // Both text messages and state must arrive cleanly
     await waitFor(() =>
-      msgHook!.messages.some(m => m.role === 'assistant' && m.status === 'complete'),
+      expect(msgHook!.messages.some(m => m.role === 'assistant' && m.status === 'complete')).toBe(true),
       { timeout: 20000 }
     );
     await waitFor(() =>
-      (stateHook!.state as Record<string, unknown>).status === 'done',
+      expect((stateHook!.state as Record<string, unknown>).status).toBe('done'),
       { timeout: 20000 }
     );
 
@@ -159,7 +147,8 @@ describe('Scenario 3: Live Shared State Synchronization', () => {
 
     await waitFor(() => {
       const s = stateHook!.state as Record<string, unknown>;
-      return s.counter === 42 && s.label === 'test';
+      expect(s.counter).toBe(42);
+      expect(s.label).toBe('test');
     });
   });
 
@@ -184,7 +173,7 @@ describe('Scenario 3: Live Shared State Synchronization', () => {
     act(() => { msgHook!.sendMessage('sync'); });
 
     await waitFor(() =>
-      (stateHook!.state as Record<string, unknown>).status === 'done',
+      expect((stateHook!.state as Record<string, unknown>).status).toBe('done'),
       { timeout: 20000 }
     );
     expect(Object.keys(stateHook!.state).length).toBeGreaterThan(0);

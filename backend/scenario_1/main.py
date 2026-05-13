@@ -1,5 +1,8 @@
+import json
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from copilotkit import CopilotKitRemoteEndpoint, LangGraphAGUIAgent, Agent
 from copilotkit.integrations.fastapi import add_fastapi_endpoint
 from agent import graph
@@ -27,7 +30,27 @@ agent = LangGraphAGUIAgent(
 sdk = CopilotKitRemoteEndpoint(agents=[agent])
 add_fastapi_endpoint(app, sdk, "/copilotkit")
 
-from fastapi.responses import StreamingResponse
+
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+@app.api_route("/stream_text", methods=["GET", "POST"])
+async def stream_text():
+    """Deterministic endpoint: emits a streaming text message followed by RUN_FINISHED."""
+    async def generate():
+        yield _sse({"type": "RUN_STARTED", "threadId": "s1", "runId": "r1"})
+        yield _sse({"type": "TEXT_MESSAGE_START", "threadId": "s1", "runId": "r1",
+                    "messageId": "m1", "role": "assistant"})
+        await asyncio.sleep(0.02)
+        yield _sse({"type": "TEXT_MESSAGE_CONTENT", "threadId": "s1", "runId": "r1",
+                    "messageId": "m1", "delta": "Hello"})
+        yield _sse({"type": "TEXT_MESSAGE_END", "threadId": "s1", "runId": "r1",
+                    "messageId": "m1"})
+        yield _sse({"type": "RUN_FINISHED", "threadId": "s1", "runId": "r1"})
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
 
 @app.post("/malformed_sse")
 async def malformed_sse():

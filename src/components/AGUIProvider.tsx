@@ -7,9 +7,7 @@ export function AGUIProvider({ endpoint, headers, threadId, onError, children }:
   const [agent, setAgent] = React.useState<HttpAgent | null>(null);
   const [clearVersion, setClearVersion] = React.useState(0);
   const bumpClear = React.useCallback(() => setClearVersion(v => v + 1), []);
-  const reconnectTimeoutRef = React.useRef<any>(null);
   const isMountedRef = React.useRef(true);
-  const retryCountRef = React.useRef(0);
   const agentRef = React.useRef<HttpAgent | null>(null);
 
   React.useEffect(() => {
@@ -52,40 +50,12 @@ export function AGUIProvider({ endpoint, headers, threadId, onError, children }:
 
       agentRef.current = currentAgent;
       setAgent(currentAgent);
-
-      fetch(endpoint, { method: 'GET', headers: headers as HeadersInit })
-        .then(() => {
-          retryCountRef.current = 0;
-        })
-        .catch((err) => {
-          if (retryCountRef.current === 0 && onError) {
-            onError({ code: 'CONNECTION_FAILED', message: err?.message || 'Connection failed' });
-          }
-          handleDisconnect();
-        });
-    };
-
-    const handleDisconnect = () => {
-      if (!isMountedRef.current) return;
-
-      retryCountRef.current++;
-
-      if (retryCountRef.current > 5) {
-        if (onError) {
-          onError({ code: 'MAX_RETRIES_EXCEEDED', message: 'Maximum reconnect retries exceeded' });
-        }
-        return;
-      }
-
-      const backoff = Math.min(Math.pow(2, retryCountRef.current - 1) * 1000, 30000);
-      reconnectTimeoutRef.current = setTimeout(connect, backoff);
     };
 
     connect();
 
     return () => {
       isMountedRef.current = false;
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       if (agentRef.current) agentRef.current.abortRun();
     };
   }, [endpoint, headers, threadId, onError]);
