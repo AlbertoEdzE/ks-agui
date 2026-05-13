@@ -33,7 +33,7 @@ fi
 
 echo "Starting scenario $SCENARIO backend on port $PORT..."
 cd "$ROOT_DIR/backend/scenario_$SCENARIO"
-uvicorn main:app --port "$PORT" > "$LOG_FILE" 2>&1 &
+"$ROOT_DIR/venv/bin/uvicorn" main:app --port "$PORT" > "$LOG_FILE" 2>&1 &
 PID=$!
 echo $PID > "$PID_FILE"
 echo "Backend $SCENARIO started with PID $PID on port $PORT"
