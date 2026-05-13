@@ -44,7 +44,7 @@ elif [ "$CLUSTER" == "integration" ]; then
 elif [ "$CLUSTER" == "scenario" ]; then
   run_scenario
 elif [ "$CLUSTER" == "all" ]; then
-  local TEST_STATUS=0
+  TEST_STATUS=0
   run_unit || TEST_STATUS=$?
   if [ $TEST_STATUS -eq 0 ]; then
     run_integration || TEST_STATUS=$?

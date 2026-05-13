@@ -7,7 +7,16 @@
     "doc": "doc"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@ag-ui/client": ">=0.0.53",
+    "@ag-ui/core": ">=0.0.53",
+    "fast-json-patch": ">=3.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "repository": {
     "type": "git",

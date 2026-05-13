@@ -1,0 +1,7 @@
+fastapi==0.136.1
+uvicorn==0.46.0
+copilotkit==0.1.88
+langgraph==1.2.0
+langgraph-prebuilt==1.1.0
+langchain-core==1.4.0
+langchain-ollama==1.1.0
