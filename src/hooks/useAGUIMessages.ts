@@ -1,9 +1,11 @@
+import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { useAGUIConnection } from './useAGUIConnection';
+import { useAGUIConnection, AGUIClearContext } from './useAGUIConnection';
 import { AGUIMessage } from '../types';
 
 export function useAGUIMessages() {
   const agent = useAGUIConnection();
+  const { bump: bumpClear } = React.useContext(AGUIClearContext);
   const [messages, setMessages] = useState<AGUIMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
 
@@ -88,7 +90,8 @@ export function useAGUIMessages() {
 
   const clearMessages = useCallback(() => {
     setMessages([]);
-  }, []);
+    bumpClear();
+  }, [bumpClear]);
 
   return { messages, isStreaming, sendMessage, clearMessages };
 }

@@ -1,10 +1,17 @@
+import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { useAGUIConnection } from './useAGUIConnection';
+import { useAGUIConnection, AGUIClearContext } from './useAGUIConnection';
 import * as jsonpatch from 'fast-json-patch';
 
 export function useAGUISharedState() {
   const agent = useAGUIConnection();
+  const { version: clearVersion } = React.useContext(AGUIClearContext);
   const [state, setStateValue] = useState<Record<string, any>>({});
+
+  // Reset to {} whenever clearMessages is called
+  useEffect(() => {
+    setStateValue({});
+  }, [clearVersion]);
 
   useEffect(() => {
     if (!agent) return;

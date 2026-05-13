@@ -1,10 +1,12 @@
 import * as React from 'react';
 import type { AGUIProviderProps } from '../types/index';
 import { HttpAgent } from '@ag-ui/client';
-import { AGUIContext } from '../hooks/useAGUIConnection';
+import { AGUIContext, AGUIClearContext } from '../hooks/useAGUIConnection';
 
 export function AGUIProvider({ endpoint, headers, threadId, onError, children }: AGUIProviderProps) {
   const [agent, setAgent] = React.useState<HttpAgent | null>(null);
+  const [clearVersion, setClearVersion] = React.useState(0);
+  const bumpClear = React.useCallback(() => setClearVersion(v => v + 1), []);
   const reconnectTimeoutRef = React.useRef<any>(null);
   const isMountedRef = React.useRef(true);
   const retryCountRef = React.useRef(0);
@@ -88,5 +90,9 @@ export function AGUIProvider({ endpoint, headers, threadId, onError, children }:
     };
   }, [endpoint, headers, threadId, onError]);
 
-  return <AGUIContext.Provider value={agent}>{children}</AGUIContext.Provider>;
+  return (
+    <AGUIClearContext.Provider value={{ version: clearVersion, bump: bumpClear }}>
+      <AGUIContext.Provider value={agent}>{children}</AGUIContext.Provider>
+    </AGUIClearContext.Provider>
+  );
 }
