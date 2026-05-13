@@ -3,7 +3,6 @@
  */
 import { expect, test, describe, afterEach, vi } from 'vitest';
 import { render, cleanup, act, waitFor } from '@testing-library/react';
-import * as React from 'react';
 import { AGUIProvider } from '../../src/components/AGUIProvider';
 import { useAGUIMessages } from '../../src/hooks/useAGUIMessages';
 

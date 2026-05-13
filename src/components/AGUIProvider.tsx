@@ -28,8 +28,10 @@ export function AGUIProvider({ endpoint, headers, threadId, onError, children }:
           ...subscriber,
           onRunFailed: async (params: any) => {
             const msg = params.error?.message?.toLowerCase() || '';
-            if (msg.includes('parse') || msg.includes('json') || msg.includes('syntax')) {
+            if (msg.includes('parse') || msg.includes('json') || msg.includes('syntax') || msg.includes('invalid_type') || msg.includes('required')) {
               console.warn('PARSE_ERROR', params.error);
+            } else if (msg.includes('patch') || msg.includes('operation') || msg.includes('apply') || msg.includes('state')) {
+              console.warn('INVALID_STATE_PATCH', params.error);
             }
             return subscriber.onRunFailed?.(params);
           }
