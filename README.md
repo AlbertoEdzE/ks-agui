@@ -1,19 +1,23 @@
-# ks-agui
+# ks-agui: A Decoupled Orchestration Layer for Agentic State Synchronization
 
-A pluggable React component library that connects any React 18+ application to any AG-UI-compliant SSE backend. Exposes both headless hooks and a default chat UI, fully decoupled so host applications can use either layer independently.
+This repository implements a robust, reactive interface for connecting distributed React 18+ environments to non-deterministic agentic backends via the AG-UI Server-Sent Events (SSE) protocol. The system is architected as a set of headless primitives and modular components designed to manage the emergent complexity of asynchronous agent-human interactions, including streaming linguistics, transactional tool execution, and differential state synchronization.
+
+## Abstract
+
+The integration of Large Language Model (LLM) agents into production interfaces necessitates a rigorous approach to state management and protocol compliance. `ks-agui` provides a formal implementation of the AG-UI specification, ensuring strict adherence to event-driven lifecycles. By utilizing a zero-mock validation strategy and RFC 6902 (JSON Patch) for state propagation, this project demonstrates a scientifically grounded approach to maintaining consistency across the client-server boundary in high-latency, non-deterministic systems.
 
 ## Prerequisites
 
-| Tool | Minimum version | Install |
-|------|----------------|---------|
-| Node.js | 20.x | https://nodejs.org |
-| Python | 3.11 | https://python.org |
-| Ollama | 0.3.0 | https://ollama.com |
-| Git | 2.x | https://git-scm.com |
+| Requirement | Minimum Version | Reference |
+|-------------|-----------------|-----------|
+| Node.js     | 20.x            | https://nodejs.org |
+| Python      | 3.11            | https://python.org |
+| Ollama      | 0.3.0           | https://ollama.com |
+| Git         | 2.x             | https://git-scm.com |
 
-## Setup
+## Technical Implementation and Setup
 
-### 1. Clone and install frontend dependencies
+### 1. Dependency Acquisition (Frontend)
 
 ```bash
 git clone https://github.com/AlbertoEdzE/ks-agui.git
@@ -21,102 +25,95 @@ cd ks-agui
 npm install
 ```
 
-### 2. Create the backend virtual environment
+### 2. Environment Configuration (Backend)
+
+The backend infrastructure requires a isolated execution environment for scenario simulation.
 
 ```bash
 python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-### 3. Pull the required Ollama model
+### 3. Model Provisioning
 
 ```bash
 ollama pull qwen2.5:7b
 ```
 
-Ollama must stay running in the background. Start it with `ollama serve` if it is not already running.
+### 4. Stack Validation
 
-### 4. Verify the full stack is ready
+Execution of the validation script ensures environmental readiness across Node, Python, and local port availability.
 
 ```bash
 ./scripts/check-stack.sh
 ```
 
-Expected output: all items show `✅` and the script exits with "Stack check passed."
+## Scenario Simulation Infrastructure
 
-## Starting backends
-
-The test suite and integration work require the scenario backends running on ports 8001–8003.
+The repository includes a suite of scenario-based backends (ports 8001–8003) to simulate varied agentic behaviors and failure modes.
 
 ```bash
-# Start all three backends at once
+# Concurrent initialization of all simulation environments
 ./scripts/start-all-backends.sh
 
-# Or start a specific backend
-./scripts/start-backend.sh 1    # port 8001 — streaming text
-./scripts/start-backend.sh 2    # port 8002 — tool call + approval
-./scripts/start-backend.sh 3    # port 8003 — shared state sync
+# Target-specific initialization
+./scripts/start-backend.sh 1    # Linguistic streaming (Port 8001)
+./scripts/start-backend.sh 2    # Transactional tool execution and approval (Port 8002)
+./scripts/start-backend.sh 3    # High-frequency state synchronization (Port 8003)
 
-# Stop backends
+# Process termination
 ./scripts/stop-backend.sh 1
 ./scripts/stop-backend.sh 2
 ./scripts/stop-backend.sh 3
 ```
 
-Backends write logs to `.backend_1.log`, `.backend_2.log`, `.backend_3.log` in the project root.
+Log outputs are persisted to `.backend_{n}.log` in the root directory for forensic analysis of agentic events.
 
-## Building the library
+## Build and Distribution
+
+The library utilizes a modern build pipeline to generate ESM and CJS distributions with externalized React dependencies.
 
 ```bash
 npm run build
 ```
 
-Output goes to `dist/`. The `dist/index.js` (ESM) and `dist/index.cjs` (CJS) are the distributable files. `react` and `react-dom` are externalized — the host application provides them.
+The resulting artifacts in `dist/` are optimized for integration into host applications without dependency bloat.
 
-Watch mode for development:
+## Scientific Validation and Testing
 
-```bash
-npm run dev
-```
-
-## Running tests
-
-Tests are organized in three clusters. The integration and scenario clusters start and stop their own backends automatically.
+Testing is categorized into three distinct clusters designed to validate both unit-level logic and complex integration flows. The project adheres to a strict zero-mock policy for integration and scenario tests, requiring live backend communication.
 
 ```bash
-# All clusters in order (unit → integration → scenario)
+# Holistic suite execution
 ./scripts/run-tests.sh all
 
-# Individual clusters
-./scripts/run-tests.sh unit          # no backends required
-./scripts/run-tests.sh integration   # starts/stops backends automatically
-./scripts/run-tests.sh scenario      # starts/stops backends automatically
-
-# Single file
-npx vitest run tests/scenarios/Scenario1.test.tsx
+# Specialized cluster execution
+./scripts/run-tests.sh unit          # Stateless logic validation
+./scripts/run-tests.sh integration   # Real-world protocol validation (automatic backend management)
+./scripts/run-tests.sh scenario      # Complex multi-step agentic flow validation
 ```
 
-Unit tests require no running services. Integration and scenario tests require Ollama running with qwen2.5:7b pulled.
+## Architecture and System Design
 
-## Architecture
+The system is organized into hierarchical layers of abstraction, separating the transport protocol from the application-level state.
 
 ```
-AGUIProvider (SSE lifecycle)
-  └── useAGUIConnection      — raw SSE event stream
-      ├── useAGUIMessages     — text message state
-      ├── useAGUIToolCalls    — tool call state + approve/reject
-      └── useAGUISharedState  — STATE_SNAPSHOT / STATE_DELTA (RFC 6902)
+AGUIProvider (SSE Lifecycle and Transport Orchestrator)
+  └── useAGUIConnection      — Reactive Event Stream Primitive
+      ├── useAGUIMessages     — Linguistic State Management
+      ├── useAGUIToolCalls    — Transactional Tool Lifecycle (Approve/Reject)
+      └── useAGUISharedState  — Differential State Sync (RFC 6902 Compliance)
 
-AGUIChat (default UI, optional)
-  ├── AGUIMessage
-  ├── AGUIToolCallDisplay
-  └── AGUIApprovalGate
+AGUIChat (Reference Implementation Layer)
+  ├── AGUIMessage             — Linguistic Rendering
+  ├── AGUIToolCallDisplay     — Interactive Tool Representation
+  └── AGUIApprovalGate        — Human-in-the-loop Transaction Control
 ```
 
-The hook layer is completely independent of the UI layer. Host applications can replace `AGUIChat` with any custom UI while reusing all hooks unchanged.
+This decoupled architecture allows host applications to consume the headless hooks for custom interface implementation while maintaining the integrity of the underlying agentic protocol.
 
-## Public API
+## Integration Specification
 
 ```tsx
 import {
@@ -125,37 +122,33 @@ import {
   useAGUIMessages,
   useAGUIToolCalls,
   useAGUISharedState,
-  useAGUIConnection,
 } from 'ks-agui';
 
-// Minimal usage with default UI
-<AGUIProvider endpoint="https://your-agui-backend/stream">
+// Reference implementation with standard interface
+<AGUIProvider endpoint="https://agent-gateway/v1/stream">
   <AGUIChat />
 </AGUIProvider>
 
-// Headless usage with custom UI
-<AGUIProvider endpoint="https://your-agui-backend/stream" onError={handleError}>
-  <MyCustomUI />
-</AGUIProvider>
-
-function MyCustomUI() {
-  const { messages, sendMessage, isStreaming } = useAGUIMessages();
-  const { toolCalls, approveToolCall, rejectToolCall } = useAGUIToolCalls();
-  const { state, setState } = useAGUISharedState();
-  // ...
+// Headless integration for custom state consumption
+function AgenticDashboard() {
+  const { messages, sendMessage } = useAGUIMessages();
+  const { toolCalls, approveToolCall } = useAGUIToolCalls();
+  const { state } = useAGUISharedState();
+  
+  // Implementation of custom agentic UI logic
 }
 ```
 
-## Peer dependencies
+## Peer Dependencies
 
-The library requires `react >= 18.0.0` and `react-dom >= 18.0.0` to be installed in the host application. These are not bundled.
+The system requires an environment providing `react >= 18.0.0` and `react-dom >= 18.0.0`. These are treated as external primitives to ensure host-level version consistency.
 
-## Scenario backends
+## Scenario Specification
 
-| Backend | Port | Endpoint | Purpose |
-|---------|------|----------|---------|
-| Scenario 1 | 8001 | `/copilotkit` | Streaming text via LangGraph + Ollama |
-| Scenario 1 | 8001 | `/stream_text` | Deterministic text stream (no Ollama) |
-| Scenario 2 | 8002 | `/emit_tool_call` | Deterministic tool call sequence |
-| Scenario 2 | 8002 | `/reject_tool` | Deterministic tool rejection |
-| Scenario 3 | 8003 | `/stream_state` | Deterministic STATE_SNAPSHOT + STATE_DELTA |
+| Simulation | Endpoint | Protocol Context |
+|------------|----------|------------------|
+| Scenario 1 | `/copilotkit` | Non-deterministic text generation via LangGraph |
+| Scenario 1 | `/stream_text` | Deterministic linguistic streaming validation |
+| Scenario 2 | `/emit_tool_call` | Tool execution lifecycle validation |
+| Scenario 2 | `/reject_tool` | Tool rejection and rollback flow validation |
+| Scenario 3 | `/stream_state` | Differential state propagation (SNAPSHOT/DELTA) |
