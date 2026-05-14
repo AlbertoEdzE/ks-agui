@@ -1,10 +1,24 @@
-# ks-agui: A Decoupled Orchestration Layer for Agentic State Synchronization
+# AG-UI: A Decoupled Orchestration Layer for Agentic State Synchronization
 
-This repository implements a robust, reactive interface for connecting distributed React 18+ environments to non-deterministic agentic backends via the AG-UI Server-Sent Events (SSE) protocol. The system is architected as a set of headless primitives and modular components designed to manage the emergent complexity of asynchronous agent-human interactions, including streaming linguistics, transactional tool execution, and differential state synchronization.
+A pluggable component for Human-Machine Interaction state synchronization.
 
 ## Abstract
 
-The integration of Large Language Model (LLM) agents into production interfaces necessitates a rigorous approach to state management and protocol compliance. `ks-agui` provides a formal implementation of the AG-UI specification, ensuring strict adherence to event-driven lifecycles. By utilizing a zero-mock validation strategy and RFC 6902 (JSON Patch) for state propagation, this project demonstrates a scientifically grounded approach to maintaining consistency across the client-server boundary in high-latency, non-deterministic systems.
+While the Model Context Protocol (MCP) standardizes machine-to-data context sharing and Agent-to-Agent (A2A) frameworks formalize machine-to-machine coordination, a critical theoretical gap remains at the machine-to-human boundary. AG-UI is proposed as the foundational protocol to bridge this divide. It introduces a formal, event-driven ontology for translating non-deterministic agentic behaviors into deterministic, observable user interface states. By positioning AG-UI as the necessary third pillar alongside MCP and A2A, this work establishes a rigorous theoretical model for human-in-the-loop state synchronization, ensuring that the emergent complexity of AI systems is predictably and safely mediated for human operators.
+
+## An AI-HUMAN interaction protocol (AG-UI)
+
+Modern human-AI interaction cannot be modeled as a simple, linear request-response mechanism. Instead, it behaves as a complex adaptive system where autonomous, non-deterministic agents continuously interact with human users, generating emergent states that must be seamlessly synchronized. 
+
+While existing frameworks such as the **Model Context Protocol (MCP) and Agent-to-Agent (A2A)** architectures have profound applications in machine-to-machine context sharing and multi-agent reasoning, they do not resolve the boundary problem: the interface where computational agentic systems meet human perception. This project is dedicated to creating a pluggable, robust component specifically for the AG-UI protocol to address this critical gap.
+
+The AG-UI protocol operates as a scientifically grounded mechanism for the human-agent interaction layer. It formalizes a continuous, differential state synchronization process via Server-Sent Events (SSE). By treating the user interface as an observable subsystem that reacts to a continuous stream of events—ranging from linguistic tokens to complex tool-call transactions and state mutations—it manages the entropy inherent in LLM generation. 
+
+### Practical Impact
+
+The development of this decoupled orchestration layer fundamentally changes the interaction boundary between Artificial Intelligence and human operators. By isolating the transport protocol from application-level state and utilizing standardized differential updates (RFC 6902 JSON Patches), this component ensures that front-end architectures remain deterministic, performant, and highly available, even when coupled with highly variable agentic backends. 
+
+For research and development teams, this provides a scalable, rigorously validated foundation for building the next generation of human-in-the-loop autonomous systems. It translates the theoretical requirements of complex system synchronization into a practical, production-ready React component library.
 
 ## Prerequisites
 
