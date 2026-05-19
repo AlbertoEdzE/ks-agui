@@ -137,6 +137,19 @@ If you have a backend running, send a message via `AGUIChat` or call `sendMessag
 - At least one `AGUIMessage` with `role: 'assistant'` appears
 - `isStreaming` returns to `false` after the response completes
 
+### 6d. Test the Draft→Confirm→Execute pattern (Component 25 / awaiting_confirmation)
+
+If your agent backend uses write tools that return `requires_confirmation: true` in the tool result:
+
+1. Send a message that triggers a draft action (e.g., "refer this submission").
+2. Confirm that `toolCalls.some(t => t.status === 'awaiting_confirmation')` becomes true.
+3. Confirm that `AGUIApprovalGate` renders with the `preview_title` from the draft (not just the tool name).
+4. Click Approve. Confirm the gate disappears and a second run completes (`status: 'complete'` on the `execute_draft_action` tool call).
+
+**If the gate never appears** (tool call stays at `executing`): the backend's `TOOL_CALL_RESULT` content does not contain `requires_confirmation: true`. Check the exact JSON structure — see PLUGGING.md Section 11b.
+
+**If approve does nothing**: verify you are calling `approveToolCall(id, toolCall.result)` with the draft result as the second argument. Without it, the agent does not receive `draft_id` and cannot execute.
+
 ### 6c. Test with the local scenario backend (if no backend is available)
 
 Clone `ks-agui` separately, start the scenario 1 backend:
@@ -162,6 +175,8 @@ If something does not work, consult in this order:
 4. **Tool args are always `{}`**: You are reading `partialToolCallArgs` during streaming. Read `toolCallArgs` from `TOOL_CALL_END` instead. See PLUGGING.md Section 8.
 5. **State never updates from `STATE_DELTA`**: The backend is sending an invalid RFC 6902 `op`. Check `console.warn` for `INVALID_STATE_PATCH`. See PLUGGING.md Section 8.
 6. **TypeScript errors on hook return values**: Check `src/types/index.ts` for the exact interface shapes.
+7. **Approval gate never appears after draft tool call**: The tool call status stays at `executing` instead of transitioning to `awaiting_confirmation`. Diagnosis: the backend's `TOOL_CALL_RESULT` content does not include `"requires_confirmation": true`. The content must be a JSON string (not a nested object in the SSE payload) with `requires_confirmation: true` at the top level. See PLUGGING.md Section 11b for the exact wire format.
+8. **Approve button triggers no execution**: `approveToolCall(id)` is called without the second argument. The agent receives `{ approved: true }` without the `draft_id`. Fix: call `approveToolCall(id, toolCall.result)` where `toolCall.result` is the parsed draft object. See PLUGGING.md Mistake 7.
 
 If none of the above resolves the issue, file an issue at `https://github.com/AlbertoEdzE/ks-agui/issues` following the template in PLUGGING.md Section 20.
 
