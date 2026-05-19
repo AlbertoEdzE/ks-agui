@@ -32,8 +32,19 @@ export function useAGUIToolCalls() {
         ));
       },
       onToolCallResultEvent: ({ event }) => {
+        let parsed: Record<string, unknown> | null = null;
+        if (typeof event.content === 'string') {
+          try {
+            parsed = JSON.parse(event.content) as Record<string, unknown>;
+          } catch { /* malformed JSON — fall through to complete */ }
+        } else if (typeof event.content === 'object' && event.content !== null) {
+          parsed = event.content as Record<string, unknown>;
+        }
+        const requiresConfirmation = parsed !== null && parsed['requires_confirmation'] === true;
         setToolCalls(prev => prev.map(t =>
-          t.id === event.toolCallId ? { ...t, status: 'complete', result: event.content } : t
+          t.id === event.toolCallId
+            ? { ...t, status: requiresConfirmation ? 'awaiting_confirmation' : 'complete', result: parsed ?? event.content }
+            : t
         ));
       }
     });
