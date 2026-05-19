@@ -16,12 +16,22 @@ export interface AGUIApprovalGateProps {
  * @param props - Contains the AGUIToolCall to render, and callback functions.
  */
 export function AGUIApprovalGate({ toolCall, onApprove, onReject }: AGUIApprovalGateProps) {
-  if (toolCall.status !== 'pending') {
+  if (toolCall.status !== 'pending' && toolCall.status !== 'awaiting_confirmation') {
     return null;
   }
 
+  const draftResult =
+    toolCall.status === 'awaiting_confirmation' &&
+    typeof toolCall.result === 'object' &&
+    toolCall.result !== null
+      ? (toolCall.result as { preview_title?: string; preview_detail?: string })
+      : null;
+
+  const approveArg =
+    toolCall.status === 'awaiting_confirmation' ? toolCall.result : { approved: true };
+
   return (
-    <div 
+    <div
       data-testid={`agui-approval-gate-${toolCall.id}`}
       style={{
         border: '1px solid #ffcc00',
@@ -35,11 +45,16 @@ export function AGUIApprovalGate({ toolCall, onApprove, onReject }: AGUIApproval
       }}
     >
       <div style={{ fontWeight: 'bold', color: '#b45309' }}>
-        Requires Approval: {toolCall.name}
+        {draftResult?.preview_title ?? `Requires Approval: ${toolCall.name}`}
       </div>
+      {draftResult?.preview_detail !== undefined && (
+        <div style={{ fontSize: '0.875rem', color: '#78350f' }}>
+          {draftResult.preview_detail}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: '8px' }}>
-        <button 
-          onClick={() => onApprove(toolCall.id, { approved: true })}
+        <button
+          onClick={() => onApprove(toolCall.id, approveArg)}
           style={{
             padding: '4px 12px',
             backgroundColor: '#10b981',
@@ -51,7 +66,7 @@ export function AGUIApprovalGate({ toolCall, onApprove, onReject }: AGUIApproval
         >
           Approve
         </button>
-        <button 
+        <button
           onClick={() => onReject(toolCall.id)}
           style={{
             padding: '4px 12px',
