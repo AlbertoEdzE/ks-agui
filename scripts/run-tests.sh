@@ -23,6 +23,7 @@ run_integration() {
   "$ROOT_DIR/scripts/stop-backend.sh" 1
   "$ROOT_DIR/scripts/stop-backend.sh" 2
   "$ROOT_DIR/scripts/stop-backend.sh" 3
+  "$ROOT_DIR/scripts/stop-backend.sh" 4
   if [ $TEST_STATUS -ne 0 ]; then exit $TEST_STATUS; fi
 }
 
@@ -34,6 +35,7 @@ run_scenario() {
   "$ROOT_DIR/scripts/stop-backend.sh" 1
   "$ROOT_DIR/scripts/stop-backend.sh" 2
   "$ROOT_DIR/scripts/stop-backend.sh" 3
+  "$ROOT_DIR/scripts/stop-backend.sh" 4
   if [ $TEST_STATUS -ne 0 ]; then exit $TEST_STATUS; fi
 }
 
