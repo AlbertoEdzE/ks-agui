@@ -1,0 +1,179 @@
+{
+  "library": "ks-agui",
+  "version": "1.0.0",
+  "description": "React component library for AG-UI protocol — connects any React app to any AG-UI SSE endpoint",
+  "url_first_contract": "One piece of information is required to use this library: the URL of an AG-UI-compliant SSE endpoint.",
+  "minimal_integration": {
+    "lines": 3,
+    "code": "<AGUIProvider endpoint=\"https://your-agent/stream\"><AGUIChat /></AGUIProvider>",
+    "imports": "import { AGUIProvider, AGUIChat } from 'ks-agui';"
+  },
+  "peer_dependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "@ag-ui/client": "0.0.53",
+    "@ag-ui/core": "0.0.53",
+    "fast-json-patch": "^3.1.1"
+  },
+  "exports": {
+    "components": [
+      {
+        "name": "AGUIProvider",
+        "type": "component",
+        "required_props": ["endpoint"],
+        "optional_props": ["headers", "threadId", "onError", "children"],
+        "note": "headers and onError must be stable references (no inline objects or arrow functions)"
+      },
+      {
+        "name": "AGUIChat",
+        "type": "component",
+        "optional_props": ["placeholder", "className", "renderMessage", "renderToolCall"],
+        "must_be_inside": "AGUIProvider"
+      }
+    ],
+    "hooks": [
+      {
+        "name": "useAGUIMessages",
+        "returns": ["messages: AGUIMessage[]", "sendMessage: (text: string) => void", "isStreaming: boolean"],
+        "must_be_inside": "AGUIProvider"
+      },
+      {
+        "name": "useAGUIToolCalls",
+        "returns": ["toolCalls: AGUIToolCall[]", "approveToolCall: (id, result?) => void", "rejectToolCall: (id) => void"],
+        "must_be_inside": "AGUIProvider"
+      },
+      {
+        "name": "useAGUISharedState",
+        "returns": ["state: Record<string, unknown>"],
+        "must_be_inside": "AGUIProvider"
+      },
+      {
+        "name": "useAGUIConnection",
+        "returns": ["AbstractAgent | null"],
+        "note": "low-level; prefer useAGUIMessages / useAGUIToolCalls",
+        "must_be_inside": "AGUIProvider"
+      }
+    ],
+    "types": [
+      "AGUIError",
+      "AGUIMessage",
+      "AGUIToolCall",
+      "AGUIProviderProps",
+      "AGUIChatProps"
+    ]
+  },
+  "type_contracts": {
+    "AGUIMessage": {
+      "id": "string",
+      "role": "'assistant' | 'user'",
+      "content": "string",
+      "status": "'streaming' | 'complete'",
+      "createdAt": "number"
+    },
+    "AGUIToolCall": {
+      "id": "string",
+      "name": "string",
+      "args": "Record<string, unknown>",
+      "status": "'pending' | 'approved' | 'rejected' | 'executing' | 'complete' | 'awaiting_confirmation'",
+      "result": "unknown | undefined",
+      "status_notes": {
+        "awaiting_confirmation": {
+          "trigger": "TOOL_CALL_RESULT event where content contains requires_confirmation: true",
+          "meaning": "A draft action has arrived and is waiting for human confirmation. result contains draft_id, preview_title, preview_detail.",
+          "next_states": ["approved (approveToolCall called)", "rejected (rejectToolCall called)"]
+        },
+        "pending": {
+          "trigger": "TOOL_CALL_START event",
+          "next_states": ["executing (TOOL_CALL_END)"]
+        },
+        "executing": {
+          "trigger": "TOOL_CALL_END event",
+          "next_states": ["complete (TOOL_CALL_RESULT without requires_confirmation)", "awaiting_confirmation (TOOL_CALL_RESULT with requires_confirmation: true)"]
+        }
+      }
+    },
+    "AGUIError": {
+      "code": "see error_codes",
+      "message": "string | undefined",
+      "originalEvent": "Event | undefined"
+    }
+  },
+  "error_codes": [
+    {
+      "code": "CONNECTION_FAILED",
+      "fires_via": "onError",
+      "trigger": "fetch() throws — endpoint unreachable, CORS rejected, DNS failure",
+      "action": "Check endpoint URL and backend CORS configuration"
+    },
+    {
+      "code": "MAX_RETRIES_EXCEEDED",
+      "fires_via": "onError",
+      "trigger": "5 consecutive CONNECTION_FAILED events with exponential backoff (1s, 2s, 4s, 8s, 16s)",
+      "action": "Backend is down; no further reconnect attempts"
+    },
+    {
+      "code": "PARSE_ERROR",
+      "fires_via": "console.warn only (not onError)",
+      "trigger": "Malformed SSE line (not valid JSON after 'data: ' prefix)",
+      "action": "Check backend SSE format; stream continues after warning"
+    },
+    {
+      "code": "TOOL_REJECTED",
+      "fires_via": "onError",
+      "trigger": "Backend sends RUN_ERROR event with code: 'TOOL_REJECTED'",
+      "action": "Tool call was rejected by the agent; isStreaming returns to false"
+    },
+    {
+      "code": "RUN_ERROR",
+      "fires_via": "onError",
+      "trigger": "Backend sends RUN_ERROR event without TOOL_REJECTED code",
+      "action": "Agent encountered an error; inspect error.message for details"
+    },
+    {
+      "code": "INVALID_STATE_PATCH",
+      "fires_via": "console.warn only (not onError)",
+      "trigger": "STATE_DELTA event contains an RFC 6902 patch that fast-json-patch rejects",
+      "action": "Check backend STATE_DELTA ops; state is left unchanged after warning"
+    }
+  ],
+  "sse_events_handled": [
+    "RUN_STARTED",
+    "RUN_FINISHED",
+    "RUN_ERROR",
+    "TEXT_MESSAGE_START",
+    "TEXT_MESSAGE_CONTENT",
+    "TEXT_MESSAGE_END",
+    "TOOL_CALL_START",
+    "TOOL_CALL_ARGS",
+    "TOOL_CALL_END",
+    "TOOL_CALL_RESULT",
+    "STATE_SNAPSHOT",
+    "STATE_DELTA"
+  ],
+  "draft_confirm_execute_pattern": {
+    "description": "Two-phase human-in-the-loop write action pattern (Component 25 compatible)",
+    "phase_1_backend_emits": "TOOL_CALL_RESULT with content JSON containing requires_confirmation: true, draft_id, preview_title, preview_detail",
+    "phase_1_frontend_state": "AGUIToolCall.status becomes 'awaiting_confirmation'",
+    "phase_1_ui": "AGUIApprovalGate renders with preview_title and preview_detail; or useAGUIToolCalls for headless",
+    "phase_2_frontend_sends": "approveToolCall(id, toolCall.result) — passes full draft object including draft_id",
+    "phase_2_backend_receives": "POST with tool message; agent calls execute_draft_action(draft_id)",
+    "phase_2_frontend_state": "New TOOL_CALL_RESULT arrives with success: true; status becomes 'complete'"
+  },
+  "common_mistakes": [
+    {
+      "mistake": "Inline headers or onError props",
+      "symptom": "Infinite reconnection / flickering",
+      "fix": "Declare headers and onError outside the component or use useMemo/useCallback"
+    },
+    {
+      "mistake": "Hook called outside AGUIProvider",
+      "symptom": "Empty arrays, no-op functions, null state silently",
+      "fix": "Ensure the component using hooks is a descendant of AGUIProvider"
+    },
+    {
+      "mistake": "approveToolCall(id) without result for awaiting_confirmation",
+      "symptom": "Backend gets {approved: true} without draft_id; no execution",
+      "fix": "Call approveToolCall(id, toolCall.result) to forward the draft object"
+    }
+  ]
+}
