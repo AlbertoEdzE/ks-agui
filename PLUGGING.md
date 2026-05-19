@@ -6,6 +6,7 @@ Complete integration reference for `ks-agui`. Every detail, every edge case, eve
 
 ## Table of Contents
 
+0. [URL-First: The Three-Line Integration](#0-url-first-the-three-line-integration)
 1. [What This Library Does](#1-what-this-library-does)
 2. [Prerequisites](#2-prerequisites)
 3. [Installation](#3-installation)
@@ -17,6 +18,7 @@ Complete integration reference for `ks-agui`. Every detail, every edge case, eve
 9. [AGUIProvider — Deep Reference](#9-aguiprovider--deep-reference)
 10. [useAGUIMessages — Deep Reference](#10-useaguimessages--deep-reference)
 11. [useAGUIToolCalls — Deep Reference](#11-useaguitoolcalls--deep-reference)
+11b. [Draft→Confirm→Execute — awaiting_confirmation](#11b-draftconfirmexecute--awaiting_confirmation)
 12. [useAGUISharedState — Deep Reference](#12-useaguisharedstate--deep-reference)
 13. [useAGUIConnection — Deep Reference](#13-useaguiconnection--deep-reference)
 14. [AGUIChat — Deep Reference](#14-aguichat--deep-reference)
@@ -48,6 +50,32 @@ The library has two distinct layers:
 - `AGUIApprovalGate` — renders approve/reject buttons for a pending tool call
 
 **Critical rule**: Both layers require `AGUIProvider` as an ancestor in the component tree. Nothing works without it.
+
+---
+
+## 0. URL-First: The Three-Line Integration
+
+> **You need exactly one piece of information to use this library: the URL of an AG-UI SSE endpoint.**
+
+```tsx
+import { AGUIProvider, AGUIChat } from 'ks-agui';
+
+export default function App() {
+  return (
+    <AGUIProvider endpoint="https://your-agent/stream">
+      <AGUIChat />
+    </AGUIProvider>
+  );
+}
+```
+
+That is the complete integration. `AGUIChat` renders a full chat UI — message list, streaming indicator, tool call cards, approval gates — all automatically wired to the endpoint you supply.
+
+**No configuration required to start.** Auth headers, thread IDs, error callbacks, and custom renderers are all optional. Add them when you need them; the library works without them.
+
+If your agent backend returns a tool result with `requires_confirmation: true` (the Draft→Confirm→Execute pattern), the approval gate appears automatically. See [Section 11b](#11b-draftconfirmexecute--awaiting_confirmation) for the full pattern.
+
+For a machine-readable summary of this entire API (suitable for AI tools), see `agent-manifest.json` at the repository root.
 
 ---
 
@@ -576,22 +604,39 @@ interface AGUIToolCall {
   id: string;                                                      // toolCallId from the event
   name: string;                                                    // toolCallName from TOOL_CALL_START
   args: Record<string, unknown>;                                   // Parsed arguments (populated on TOOL_CALL_END)
-  status: 'pending' | 'approved' | 'rejected' | 'executing' | 'complete';
+  status: 'pending' | 'approved' | 'rejected' | 'executing' | 'complete' | 'awaiting_confirmation';
   result?: unknown;                                                // From TOOL_CALL_RESULT content
 }
 ```
 
 ### Status lifecycle
 
+**Standard tool call (no confirmation required):**
+
 ```
-TOOL_CALL_START  → status: 'pending'   (args: {})
-TOOL_CALL_ARGS   → status: 'pending'   (args: partial, may still be {})
-TOOL_CALL_END    → status: 'executing' (args: fully parsed final object)
-                                        ← call approveToolCall() or rejectToolCall() HERE
-TOOL_CALL_RESULT → status: 'complete'  (result populated)
+TOOL_CALL_START  → status: 'pending'              (args: {})
+TOOL_CALL_ARGS   → status: 'pending'              (args: partial)
+TOOL_CALL_END    → status: 'executing'            (args: final)
+TOOL_CALL_RESULT → status: 'complete'             (result populated)
 ```
 
-**Important**: The approval/rejection decision should be made while `status === 'pending'`. However, nothing prevents calling `approveToolCall` at any status — it will update local state and call `agent.runAgent()` regardless.
+**Draft action requiring confirmation (requires_confirmation: true in result):**
+
+```
+TOOL_CALL_START  → status: 'pending'              (args: {})
+TOOL_CALL_ARGS   → status: 'pending'              (args: partial)
+TOOL_CALL_END    → status: 'executing'            (args: final)
+TOOL_CALL_RESULT → status: 'awaiting_confirmation' (result: { draft_id, preview_title, preview_detail, ... })
+                   ← approveToolCall(id, result) or rejectToolCall(id) HERE
+approveToolCall  → status: 'approved'             (agent called with draft result including draft_id)
+rejectToolCall   → status: 'rejected'             (agent called with { approved: false })
+```
+
+**Critical for awaiting_confirmation**: Call `approveToolCall(id, toolCall.result)` — passing `toolCall.result` as the second argument. The result contains `draft_id` which the agent needs to call `execute_draft_action`. If you omit the second argument, the agent receives `{ approved: true }` without `draft_id` and cannot execute the draft.
+
+See [Section 11b](#11b-draftconfirmexecute--awaiting_confirmation) for the complete pattern.
+
+**Important**: Nothing prevents calling `approveToolCall` at any status — it always updates local state and calls `agent.runAgent()`.
 
 ### `approveToolCall(id, result?)`
 
@@ -608,6 +653,96 @@ TOOL_CALL_RESULT → status: 'complete'  (result populated)
 ### Tool calls are NOT cleared by clearMessages
 
 `clearMessages()` only clears the messages array and shared state. Tool calls persist. If you want to clear tool calls, you must re-mount `AGUIProvider` (change a key prop) or handle this in your custom UI by filtering `toolCalls` by a session identifier.
+
+---
+
+## 11b. Draft→Confirm→Execute — awaiting_confirmation
+
+This section documents the two-phase human-in-the-loop write action pattern. Use it whenever your agent must stage an action for human review before committing it.
+
+### The pattern
+
+```
+Phase 1 — Draft
+  User sends message
+  Agent calls draft_referral (or any draft_* tool)
+  Backend emits TOOL_CALL_RESULT with requires_confirmation: true
+  frontend: toolCall.status → 'awaiting_confirmation'
+  frontend: toolCall.result = { draft_id, preview_title, preview_detail, ... }
+  UI: approval gate renders with preview_title and preview_detail
+
+Phase 2 — Confirm
+  User clicks Approve
+  approveToolCall(id, toolCall.result) called
+  agent.addMessage({ role: 'tool', content: JSON.stringify(toolCall.result) })
+  agent.runAgent() — sends POST with the tool message (draft_id inside)
+  Agent receives draft_id, calls execute_draft_action(draft_id)
+  Backend emits second run: TOOL_CALL_RESULT with { success: true, referral_id, ... }
+  frontend: new toolCall.status → 'complete'
+```
+
+### What your backend must emit in Phase 1
+
+```
+data: {"type":"TOOL_CALL_RESULT","threadId":"t1","runId":"r1",
+       "toolCallId":"call_1","messageId":"res_1",
+       "content":"{\"draft_id\":\"abc\",\"preview_title\":\"Create Referral — Normal Priority\",
+                   \"preview_detail\":\"Create referral to SeniorUW queue. Reason: ...\",
+                   \"requires_confirmation\":true,\"action_type\":\"CreateReferral\"}"}
+```
+
+The `content` field must be a **JSON string** (not an object). The key field is `requires_confirmation: true`. Without it, the tool call transitions to `complete` and no approval gate appears.
+
+### Headless hook implementation
+
+```tsx
+function DraftActionUI() {
+  const { toolCalls, approveToolCall, rejectToolCall } = useAGUIToolCalls();
+  const { sendMessage } = useAGUIMessages();
+
+  return (
+    <div>
+      {toolCalls
+        .filter(tc => tc.status === 'awaiting_confirmation')
+        .map(tc => {
+          const result = tc.result as { preview_title?: string; preview_detail?: string };
+          return (
+            <div key={tc.id} className="draft-card">
+              <h3>{result.preview_title ?? tc.name}</h3>
+              {result.preview_detail && <p>{result.preview_detail}</p>}
+              <button onClick={() => approveToolCall(tc.id, tc.result)}>Confirm</button>
+              <button onClick={() => rejectToolCall(tc.id)}>Cancel</button>
+            </div>
+          );
+        })}
+      <button onClick={() => sendMessage('refer this submission')}>Start</button>
+    </div>
+  );
+}
+```
+
+### Using AGUIChat (automatic)
+
+`AGUIChat` delegates `awaiting_confirmation` to `AGUIApprovalGate` automatically. You do not need headless hooks unless you want custom rendering. `AGUIApprovalGate` renders `preview_title` when present and falls back to `toolCall.name` for backward compatibility.
+
+### Failure modes
+
+| Failure | What backend emits | Frontend result |
+|---|---|---|
+| Draft expired before confirmation | RUN_ERROR ("Draft expired") | onError fires with code: 'RUN_ERROR' |
+| Domain API fails during execute | TOOL_CALL_RESULT with success: false | New toolCall at 'complete' with success: false |
+| Write tools disabled | TOOL_CALL_RESULT without requires_confirmation | toolCall at 'complete', no gate rendered |
+| User rejects | agent receives {approved: false}, emits cancellation | New message with cancellation text |
+
+### Input guard for awaiting_confirmation
+
+Disable your input while any tool call is in `awaiting_confirmation`:
+
+```tsx
+<input disabled={toolCalls.some(t =>
+  t.status === 'pending' || t.status === 'awaiting_confirmation'
+)} />
+```
 
 ---
 
@@ -842,7 +977,19 @@ data: {"type":"RUN_FINISHED","threadId":"t1","runId":"r1"}  ← do not send this
 data: {"type":"RUN_ERROR","threadId":"t1","runId":"r1","message":"Failed"}
 ```
 
-### Mistake 7: Using AGUIApprovalGate or AGUIMessage as standalone imports
+### Mistake 7: approveToolCall without result for awaiting_confirmation
+
+```tsx
+// WRONG — omitting result means the agent gets {approved: true} without draft_id
+approveToolCall(tc.id);  // backend receives { approved: true } — no draft_id
+
+// CORRECT — pass the draft result so agent receives draft_id
+approveToolCall(tc.id, tc.result);  // backend receives full draft object including draft_id
+```
+
+This only matters when `tc.status === 'awaiting_confirmation'`. For `status === 'pending'`, omitting the result is fine.
+
+### Mistake 8: Using AGUIApprovalGate or AGUIMessage as standalone imports
 
 These components are used internally by `AGUIChat` but are not exported from the public API (`src/index.ts`). Import only from `'ks-agui'`.
 
