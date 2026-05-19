@@ -13,7 +13,7 @@ describe('AGUIToolCall type validity', () => {
     expectTypeOf<AGUIToolCall['args']>().toEqualTypeOf<Record<string, unknown>>();
     
     expectTypeOf<AGUIToolCall>().toHaveProperty('status');
-    expectTypeOf<AGUIToolCall['status']>().toEqualTypeOf<'pending' | 'approved' | 'rejected' | 'executing' | 'complete'>();
+    expectTypeOf<AGUIToolCall['status']>().toEqualTypeOf<'pending' | 'approved' | 'rejected' | 'executing' | 'complete' | 'awaiting_confirmation'>();
     
     expectTypeOf<AGUIToolCall>().toHaveProperty('result');
     expectTypeOf<AGUIToolCall['result']>().toEqualTypeOf<unknown | undefined>();

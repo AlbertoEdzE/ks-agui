@@ -70,7 +70,7 @@ export interface AGUIToolCall {
   /**
    * The current status of the tool call.
    */
-  status: 'pending' | 'approved' | 'rejected' | 'executing' | 'complete';
+  status: 'pending' | 'approved' | 'rejected' | 'executing' | 'complete' | 'awaiting_confirmation';
   /**
    * Optional result returned by the tool execution.
    */
