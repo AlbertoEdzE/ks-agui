@@ -136,6 +136,7 @@ async def _stream_execute_turn(draft_id: str) -> AsyncIterator[str]:
                     "draft_id": draft_id,
                     "action_type": "CreateReferral",
                     "success": True,
+                    "referral_id": referral_id,
                     "result_data": {"referral_id": referral_id},
                 })})
     yield _sse({"type": "TEXT_MESSAGE_CONTENT", "threadId": THREAD_ID, "runId": RUN_ID,
@@ -183,6 +184,12 @@ async def draft_referral(request: Request) -> StreamingResponse:
             if draft_id:
                 draft = draft_store.get(draft_id)
                 if draft and not draft_store.is_expired(draft_id):
+                    if draft.get("status") == "Executed":
+                        async def _already_executed() -> AsyncIterator[str]:
+                            yield _sse({"type": "RUN_STARTED", "threadId": THREAD_ID, "runId": RUN_ID})
+                            yield _sse({"type": "RUN_ERROR", "threadId": THREAD_ID, "runId": RUN_ID,
+                                        "message": "Draft already executed"})
+                        return StreamingResponse(_already_executed(), media_type="text/event-stream")
                     return StreamingResponse(
                         _stream_execute_turn(draft_id),
                         media_type="text/event-stream",
